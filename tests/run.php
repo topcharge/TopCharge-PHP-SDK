@@ -36,7 +36,6 @@ function assertSame(mixed $expected, mixed $actual, string $message = ''): void
 $http = new FakeHttpClient([
     new HttpResponse(200, '{"availableBalance":"140000.0000"}'),
     new HttpResponse(201, '{"paymentId":"pay_123","paymentUrl":"https:\/\/checkout.example\/pay_123"}'),
-    new HttpResponse(200, '{"items":[],"cursor":null}'),
     new HttpResponse(401, '{"ok":false,"err":{"message":"invalid API credentials"}}'),
 ]);
 $client = new TopChargeClient('mch_test_example', 'sk_test_example', 'https://api.example.test/', $http);
@@ -44,13 +43,11 @@ $client = new TopChargeClient('mch_test_example', 'sk_test_example', 'https://ap
 assertSame('140000.0000', $client->account->getBalance()['availableBalance']);
 $payment = $client->payments->create('25000', 'Invoice #1001');
 assertSame('pay_123', $payment['paymentId']);
-$client->giftCards->listCards(limit: 20, standalone: true);
 
 assertSame('https://api.example.test/api/v1/account/balance/', $http->requests[0]['url']);
 assertSame('mch_test_example', $http->requests[0]['headers']['x-api-key']);
 assertSame('sk_test_example', $http->requests[0]['headers']['x-api-secret']);
 assertSame('{"paymentAmount":"25000","description":"Invoice #1001"}', $http->requests[1]['body']);
-assertSame('https://api.example.test/api/v1/giftcard/card/?limit=20&standalone=1&reveal=0', $http->requests[2]['url']);
 
 try {
     $client->account->verifyCredentials();

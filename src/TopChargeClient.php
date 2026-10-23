@@ -10,7 +10,6 @@ use TopCharge\SDK\Http\CurlHttpClient;
 use TopCharge\SDK\Http\HttpClientInterface;
 use TopCharge\SDK\Http\HttpResponse;
 use TopCharge\SDK\Service\AccountService;
-use TopCharge\SDK\Service\GiftCardService;
 use TopCharge\SDK\Service\PaymentService;
 use TopCharge\SDK\Service\WithdrawalService;
 
@@ -19,7 +18,6 @@ final class TopChargeClient
     public readonly AccountService $account;
     public readonly PaymentService $payments;
     public readonly WithdrawalService $withdrawals;
-    public readonly GiftCardService $giftCards;
 
     private readonly HttpClientInterface $httpClient;
     private readonly string $baseUrl;
@@ -42,7 +40,6 @@ final class TopChargeClient
         $this->account = new AccountService($this);
         $this->payments = new PaymentService($this);
         $this->withdrawals = new WithdrawalService($this);
-        $this->giftCards = new GiftCardService($this);
     }
 
     /**

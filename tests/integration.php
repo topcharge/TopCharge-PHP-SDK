@@ -73,43 +73,6 @@ function runAction(TopChargeClient $client, string $action): void
                 requiredEnv('TOPCHARGE_WITHDRAWAL_AMOUNT'),
             ));
             return;
-        case 'giftcard:issue':
-            requireConfirmation('TOPCHARGE_ALLOW_VALUE_ISSUANCE');
-            printJson($client->giftCards->issue(
-                requiredEnv('TOPCHARGE_GIFTCARD_AMOUNT'),
-                requiredEnv('TOPCHARGE_IDEMPOTENCY_KEY'),
-                optionalPositiveInt('TOPCHARGE_GIFTCARD_QUANTITY'),
-                optionalEnv('TOPCHARGE_GIFTCARD_NAME'),
-            ));
-            return;
-        case 'giftcard:batches':
-            printJson($client->giftCards->listBatches(cursor(), limit(), paginationSort()));
-            return;
-        case 'giftcard:batch':
-            printJson($client->giftCards->getBatch(requiredEnv('TOPCHARGE_BATCH_ID')));
-            return;
-        case 'giftcard:batch-cards':
-            printJson($client->giftCards->listBatchCards(
-                requiredEnv('TOPCHARGE_BATCH_ID'), cursor(), limit(), paginationSort(), booleanEnv('TOPCHARGE_REVEAL'),
-            ));
-            return;
-        case 'giftcard:revoke-batch':
-            requireConfirmation('TOPCHARGE_ALLOW_VALUE_REVOCATION');
-            printJson($client->giftCards->revokeBatch(requiredEnv('TOPCHARGE_BATCH_ID'), optionalEnv('TOPCHARGE_REVOKE_REASON')));
-            return;
-        case 'giftcard:cards':
-            printJson($client->giftCards->listCards(
-                cursor(), limit(), paginationSort(), optionalEnv('TOPCHARGE_GIFTCARD_STATUS'), optionalEnv('TOPCHARGE_BATCH_ID'),
-                nullableBooleanEnv('TOPCHARGE_STANDALONE'), booleanEnv('TOPCHARGE_REVEAL'),
-            ));
-            return;
-        case 'giftcard:card':
-            printJson($client->giftCards->getCard(requiredEnv('TOPCHARGE_CARD_ID'), booleanEnv('TOPCHARGE_REVEAL')));
-            return;
-        case 'giftcard:revoke-card':
-            requireConfirmation('TOPCHARGE_ALLOW_VALUE_REVOCATION');
-            printJson($client->giftCards->revokeCard(requiredEnv('TOPCHARGE_CARD_ID'), optionalEnv('TOPCHARGE_REVOKE_REASON')));
-            return;
         default:
             throw new RuntimeException("Unknown action '{$action}'. Run: php tests/integration.php help");
     }
@@ -160,55 +123,6 @@ function requireConfirmation(string $name): void
     }
 }
 
-function optionalPositiveInt(string $name): ?int
-{
-    $value = optionalEnv($name);
-    if ($value === null) {
-        return null;
-    }
-    if (filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
-        throw new RuntimeException("{$name} must be a positive integer.");
-    }
-    return (int) $value;
-}
-
-function cursor(): ?string
-{
-    return optionalEnv('TOPCHARGE_CURSOR');
-}
-
-function limit(): ?int
-{
-    return optionalPositiveInt('TOPCHARGE_LIMIT');
-}
-
-function paginationSort(): ?string
-{
-    $value = optionalEnv('TOPCHARGE_SORT');
-    if ($value !== null && !in_array($value, ['asc', 'desc'], true)) {
-        throw new RuntimeException('TOPCHARGE_SORT must be asc or desc.');
-    }
-    return $value;
-}
-
-function booleanEnv(string $name, bool $default = false): bool
-{
-    $value = optionalEnv($name);
-    if ($value === null) {
-        return $default;
-    }
-    return match (strtolower($value)) {
-        '1', 'true', 'yes' => true,
-        '0', 'false', 'no' => false,
-        default => throw new RuntimeException("{$name} must be true or false."),
-    };
-}
-
-function nullableBooleanEnv(string $name): ?bool
-{
-    return optionalEnv($name) === null ? null : booleanEnv($name);
-}
-
 /** @param array<string, mixed> $response */
 function printJson(array $response): void
 {
@@ -229,11 +143,6 @@ Read-only actions:
   account:verify
   account:balance
   payment:status          (TOPCHARGE_PAYMENT_ID)
-  giftcard:batches        (optional TOPCHARGE_CURSOR, TOPCHARGE_LIMIT, TOPCHARGE_SORT)
-  giftcard:batch          (TOPCHARGE_BATCH_ID)
-  giftcard:batch-cards    (TOPCHARGE_BATCH_ID; optional TOPCHARGE_REVEAL=true)
-  giftcard:cards          (optional TOPCHARGE_GIFTCARD_STATUS, TOPCHARGE_BATCH_ID, TOPCHARGE_STANDALONE=true, TOPCHARGE_REVEAL=true)
-  giftcard:card           (TOPCHARGE_CARD_ID; optional TOPCHARGE_REVEAL=true)
 
 Payment actions:
   payment:create          (optional TOPCHARGE_TEST_PAYMENT_AMOUNT; leaves a PENDING payment)
@@ -242,9 +151,6 @@ Payment actions:
 
 Value-moving actions require an extra explicit confirmation:
   withdrawal:create       (TOPCHARGE_ALLOW_MONEY_MOVEMENT=1, TOPCHARGE_PHONE_COUNTRY_CODE, TOPCHARGE_PHONE_NUMBER, TOPCHARGE_WITHDRAWAL_AMOUNT)
-  giftcard:issue          (TOPCHARGE_ALLOW_VALUE_ISSUANCE=1, TOPCHARGE_GIFTCARD_AMOUNT, TOPCHARGE_IDEMPOTENCY_KEY; optional TOPCHARGE_GIFTCARD_QUANTITY, TOPCHARGE_GIFTCARD_NAME)
-  giftcard:revoke-batch   (TOPCHARGE_ALLOW_VALUE_REVOCATION=1, TOPCHARGE_BATCH_ID; optional TOPCHARGE_REVOKE_REASON)
-  giftcard:revoke-card    (TOPCHARGE_ALLOW_VALUE_REVOCATION=1, TOPCHARGE_CARD_ID; optional TOPCHARGE_REVOKE_REASON)
 
 Example:
   php tests/integration.php payment:smoke

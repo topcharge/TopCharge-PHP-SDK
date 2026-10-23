@@ -64,9 +64,6 @@ The default base URL is `https://api.topcharge.app`. Pass `baseUrl:` to use a te
 ## Services
 
 ```php
-$batchId = '01...'; // An ID returned by issue() or listBatches().
-$cardId = '01...';  // An ID returned by a card-list operation.
-
 $client->account->verifyCredentials();
 $client->account->getBalance();
 
@@ -76,14 +73,6 @@ $client->payments->cancel($paymentId);
 
 $client->withdrawals->create('964', '7701234567', '50000');
 
-$client->giftCards->issue('25000', 'order-1001-card-01');
-$client->giftCards->listBatches(limit: 20);
-$client->giftCards->getBatch($batchId);
-$client->giftCards->listBatchCards($batchId, reveal: true);
-$client->giftCards->revokeBatch($batchId, 'Campaign cancelled');
-$client->giftCards->listCards(status: 'ACTIVE', standalone: true);
-$client->giftCards->getCard($cardId, reveal: true);
-$client->giftCards->revokeCard($cardId, 'Issued in error');
 ```
 
 All successful JSON responses are returned as associative arrays. `verifyCredentials()` returns `void`.
@@ -117,9 +106,9 @@ php tests/integration.php payment:smoke
 php tests/integration.php account:balance
 ```
 
-Run `php tests/integration.php help` to see the separate command and required variables for every Account, Payment, Withdrawal, and Gift Card method. `payment:create` defaults to `50000` IQD; change it with `TOPCHARGE_TEST_PAYMENT_AMOUNT`.
+Run `php tests/integration.php help` to see the separate command and required variables for every Account, Payment, and Withdrawal method. `payment:create` defaults to `50000` IQD; change it with `TOPCHARGE_TEST_PAYMENT_AMOUNT`.
 
-Optionally set `TOPCHARGE_BASE_URL` for a non-production environment. Withdrawal, gift-card issue, and gift-card revoke examples require an additional explicit environment confirmation because they move or reserve value.
+Optionally set `TOPCHARGE_BASE_URL` for a non-production environment. The withdrawal example requires an additional explicit environment confirmation because it moves value.
 
 ## Errors
 
@@ -139,13 +128,9 @@ try {
 }
 ```
 
-## Gift-card safety
-
-`issue()` requires an `idempotencyKey`. Persist a unique key per business operation and reuse it only when retrying that same operation. Gift-card codes can be revealed only on fresh issuance or with `reveal: true`; treat returned codes as sensitive data.
-
 ## Reliability
 
-The SDK does not automatically retry requests. Retrying reads is normally safe. Do not blindly retry a payment creation or withdrawal if the network result is unknown; first resolve its outcome with your own business record or the API. For gift-card issuance, retry only with the same persisted idempotency key. The default HTTP timeout is 30 seconds.
+The SDK does not automatically retry requests. Retrying reads is normally safe. Do not blindly retry a payment creation or withdrawal if the network result is unknown; first resolve its outcome with your own business record or the API. The default HTTP timeout is 30 seconds.
 
 ## License
 
